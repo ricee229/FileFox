@@ -10,13 +10,13 @@ FORMAT = "utf-8"
 SERVER_PATH = "server"
 
 
-### to handle the clients
+# to handle the clients
 def handle_client(conn, addr):
     files = os.listdir(SERVER_PATH)
 
     print(f"[NEW CONNECTION] {addr} connected.")
     conn.send("OK@Welcome to the server".encode(FORMAT))
-
+    # runs until client logouts
     while True:
         data = conn.recv(SIZE).decode(FORMAT)
         data = data.split("@")
@@ -31,14 +31,16 @@ def handle_client(conn, addr):
             data = conn.recv(SIZE).decode(FORMAT)
             files = os.listdir(SERVER_PATH)
             fileName, rename = data.split('@')
-
-            if fileName in files:  ##  condition if file exist in the server.
+            # check if file exists
+            if fileName in files:
+                # get file paths and rename
                 file_add = os.path.join(SERVER_PATH, fileName)
                 rename_add = os.path.join(SERVER_PATH, rename)
                 os.rename(file_add, rename_add)
                 send_data += "File renamed"
                 conn.send(f"{send_data}".encode(FORMAT))
             else:
+                # tell client file doesnt exist
                 send_data += fileName + " does not exist"
                 conn.send(f"{send_data}".encode(FORMAT))
 
@@ -69,7 +71,9 @@ def handle_client(conn, addr):
         elif cmd == "DOWNLOAD":
             file_name = conn.recv(SIZE).decode(FORMAT)
             files = os.listdir(SERVER_PATH)
+            # check if file exists
             if file_name in files:
+                # get size and send it to client
                 file_add = os.path.join(SERVER_PATH, file_name)
                 file_size = os.path.getsize(file_add)
                 conn.send(f"EXISTS".encode(FORMAT))
@@ -83,26 +87,32 @@ def handle_client(conn, addr):
                             break
                         conn.sendall(data)
                         bytecount += len(data)
-
+                # tell client file was downloaded
                 send_data += "file download complete"
                 conn.send(f"{send_data}".encode(FORMAT))
             else:
+                # send client file doesnt exist
                 conn.send(f"ERROR".encode(FORMAT))
                 conn.send(f"{send_data}".encode(FORMAT))
 
         elif cmd == "DELETE":
+            # receive file name
             file_name = conn.recv(SIZE).decode(FORMAT)
             files = os.listdir(SERVER_PATH)
+            # check if file exists
             if file_name in files:
+                # remove file and send to client that its deleted
                 file_add = os.path.join(SERVER_PATH, file_name)
                 os.remove(file_add)
                 send_data += file_name + " has been removed"
                 conn.send(f"{send_data}".encode(FORMAT))
             else:
+                # send to client file doesnt exist
                 send_data += file_name + " does not exist"
                 conn.send(f"{send_data}".encode(FORMAT))
 
         elif cmd == "DIR":
+            # get files and send to client
             files = os.listdir(SERVER_PATH)
             file_sizes = []
             for file in files:
@@ -116,13 +126,13 @@ def handle_client(conn, addr):
 
 def main():
     print("Starting the server")
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  ## used IPV4 and TCP connection
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # used IPV4 and TCP connection
     server.bind(ADDR)  # bind the address
-    server.listen()  ## start listening
+    server.listen()  # start listening
     print(f"server is listening on {IP}: {PORT}")
     while True:
-        conn, addr = server.accept()  ### accept a connection from a client
-        thread = threading.Thread(target=handle_client, args=(conn, addr))  ## assigning a thread for each client
+        conn, addr = server.accept()  # accept a connection from a client
+        thread = threading.Thread(target=handle_client, args=(conn, addr))  # assigning a thread for each client
         thread.start()
 
 
